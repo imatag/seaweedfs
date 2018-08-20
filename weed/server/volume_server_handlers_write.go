@@ -11,6 +11,7 @@ import (
 	"github.com/chrislusf/seaweedfs/weed/topology"
 	"strconv"
 	"time"
+	"github.com/chrislusf/seaweedfs/weed/util"
 )
 
 func (vs *VolumeServer) PostHandler(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +20,7 @@ func (vs *VolumeServer) PostHandler(w http.ResponseWriter, r *http.Request) {
 		writeJsonError(w, r, http.StatusBadRequest, e)
 		return
 	}
-	vid, _, _, _, _ := parseURLPath(r.URL.Path)
+	vid, _, _, _, _ := util.ParseURLPath(r.URL.Path)
 	volumeId, ve := storage.NewVolumeId(vid)
 	if ve != nil {
 		glog.V(0).Infoln("NewVolumeId error:", ve)
@@ -51,7 +52,7 @@ func (vs *VolumeServer) PostHandler(w http.ResponseWriter, r *http.Request) {
 
 func (vs *VolumeServer) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	n := new(storage.Needle)
-	vid, fid, _, _, _ := parseURLPath(r.URL.Path)
+	vid, fid, _, _, _ := util.ParseURLPath(r.URL.Path)
 	volumeId, _ := storage.NewVolumeId(vid)
 	n.ParsePath(fid)
 

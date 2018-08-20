@@ -25,7 +25,7 @@ var fileNameEscaper = strings.NewReplacer("\\", "\\\\", "\"", "\\\"")
 
 func (vs *VolumeServer) GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 	n := new(storage.Needle)
-	vid, fid, filename, ext, _ := parseURLPath(r.URL.Path)
+	vid, fid, filename, ext, _ := util.ParseURLPath(r.URL.Path)
 	volumeId, err := storage.NewVolumeId(vid)
 	if err != nil {
 		glog.V(2).Infoln("parsing error:", err, r.URL.Path)

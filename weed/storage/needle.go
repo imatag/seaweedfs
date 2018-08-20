@@ -11,6 +11,7 @@ import (
 	"github.com/chrislusf/seaweedfs/weed/images"
 	. "github.com/chrislusf/seaweedfs/weed/storage/types"
 	"io/ioutil"
+        . "github.com/chrislusf/seaweedfs/weed/util"
 )
 
 const (
@@ -78,15 +79,13 @@ func ParseUpload(r *http.Request) (
 }
 func NewNeedle(r *http.Request, fixJpgOrientation bool) (n *Needle, e error) {
 	var pairMap map[string]string
+	var fid string
+	var fname2 string
 	fname, mimeType, isGzipped, isChunkedFile := "", "", false, false
 	n = new(Needle)
 	fname, n.Data, mimeType, pairMap, isGzipped, n.LastModified, n.Ttl, isChunkedFile, e = ParseUpload(r)
 	if e != nil {
 		return
-	}
-	if len(fname) < 256 {
-		n.Name = []byte(fname)
-		n.SetHasName()
 	}
 	if len(mimeType) < 256 {
 		n.Mime = []byte(mimeType)
@@ -129,17 +128,22 @@ func NewNeedle(r *http.Request, fixJpgOrientation bool) (n *Needle, e error) {
 
 	n.Checksum = NewCRC(n.Data)
 
-	commaSep := strings.LastIndex(r.URL.Path, ",")
-	dotSep := strings.LastIndex(r.URL.Path, ".")
-	fid := r.URL.Path[commaSep+1:]
-	if dotSep > 0 {
-		fid = r.URL.Path[commaSep+1 : dotSep]
+	_, fid, fname2, _, _ = ParseURLPath(r.URL.Path)
+
+	if fname2 != "" {
+		fname = fname2
+	}
+	
+	if len(fname) < 256 {
+		n.Name = []byte(fname)
+		n.SetHasName()
 	}
 
 	e = n.ParsePath(fid)
 
 	return
 }
+
 func (n *Needle) ParsePath(fid string) (err error) {
 	length := len(fid)
 	if length <= CookieSize*2 {

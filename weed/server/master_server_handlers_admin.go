@@ -79,7 +79,7 @@ func (ms *MasterServer) volumeStatusHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (ms *MasterServer) redirectHandler(w http.ResponseWriter, r *http.Request) {
-	vid, _, _, _, _ := parseURLPath(r.URL.Path)
+	vid, _, _, _, _ := util.ParseURLPath(r.URL.Path)
 	volumeId, err := storage.NewVolumeId(vid)
 	if err != nil {
 		debug("parsing error:", err, r.URL.Path)
