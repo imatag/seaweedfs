@@ -76,7 +76,11 @@ func batchVacuumVolumeCommit(vl *VolumeLayout, vid storage.VolumeId, locationlis
 			glog.V(0).Infoln("Complete Commiting vacuum", vid, "on", dn.Url())
 		}
 		if isCommitSuccess {
-			vl.SetVolumeAvailable(dn, vid)
+			// set volume available, without locking
+			vl.vid2location[vid].Set(dn)
+			if vl.vid2location[vid].Length() >= vl.rp.GetCopyCount() {
+				vl.setVolumeWritable(vid)
+			}
 		}
 	}
 	return isCommitSuccess
@@ -99,11 +103,10 @@ func (t *Topology) Vacuum(garbageThreshold string, preallocate int64) int {
 		for _, vl := range c.storageType2VolumeLayout.Items() {
 			if vl != nil {
 				volumeLayout := vl.(*VolumeLayout)
+				volumeLayout.accessLock.RLock()
 				for vid, locationlist := range volumeLayout.vid2location {
 
-					volumeLayout.accessLock.RLock()
 					isReadOnly, hasValue := volumeLayout.readonlyVolumes[vid]
-					volumeLayout.accessLock.RUnlock()
 
 					if hasValue && isReadOnly {
 						continue
@@ -116,6 +119,7 @@ func (t *Topology) Vacuum(garbageThreshold string, preallocate int64) int {
 						}
 					}
 				}
+				volumeLayout.accessLock.RUnlock()
 			}
 		}
 	}

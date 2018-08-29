@@ -40,11 +40,13 @@ func (t *Topology) SetVolumeCapacityFull(volumeInfo storage.VolumeInfo) bool {
 	if !vl.SetVolumeCapacityFull(volumeInfo.Id) {
 		return false
 	}
+	vl.accessLock.RLock()
 	for _, dn := range vl.vid2location[volumeInfo.Id].list {
 		if !volumeInfo.ReadOnly {
 			dn.UpAdjustActiveVolumeCountDelta(-1)
 		}
 	}
+	vl.accessLock.RUnlock()
 	return true
 }
 func (t *Topology) UnRegisterDataNode(dn *DataNode) {
