@@ -286,7 +286,7 @@ func (s *Store) UnmountVolume(i VolumeId) error {
 
 func (s *Store) DeleteVolume(i VolumeId) error {
 	for _, location := range s.Locations {
-		if error := location.deleteVolumeById(i); error == nil {
+		if error := location.DeleteVolume(i); error == nil {
 			s.updateMaster()
 			return nil
 		}
