@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"math/rand"
 	"time"
 
 	"fmt"
@@ -96,6 +97,16 @@ func batchVacuumVolumeCleanup(vl *VolumeLayout, vid storage.VolumeId, locationli
 	}
 }
 
+func shuffle(vals []storage.VolumeId) {
+  r := rand.New(rand.NewSource(time.Now().Unix()))
+  for len(vals) > 0 {
+    n := len(vals)
+    randIndex := r.Intn(n)
+    vals[n-1], vals[randIndex] = vals[randIndex], vals[n-1]
+    vals = vals[:n-1]
+  }
+}
+
 func (t *Topology) Vacuum(garbageThreshold string, preallocate int64) int {
 	glog.V(0).Infof("Start vacuum on demand with threshold:%s", garbageThreshold)
 	for _, col := range t.collectionMap.Items() {
@@ -104,8 +115,22 @@ func (t *Topology) Vacuum(garbageThreshold string, preallocate int64) int {
 			if vl != nil {
 				volumeLayout := vl.(*VolumeLayout)
 				volumeLayout.accessLock.RLock()
-				for vid, locationlist := range volumeLayout.vid2location {
 
+				// make a slice out of the vid keys
+				keys := make([]storage.VolumeId, 0, len(volumeLayout.vid2location))
+				for vid, _ := range volumeLayout.vid2location {
+					keys = append(keys, vid)
+				}
+
+				// limit to at most 100 vacuums
+				if len(keys) > 100 {
+					shuffle(keys)
+					keys = keys[:100]
+				}
+
+				for i := range keys {
+					vid := keys[i]
+					locationlist := volumeLayout.vid2location[vid]
 					isReadOnly, hasValue := volumeLayout.readonlyVolumes[vid]
 
 					if hasValue && isReadOnly {
