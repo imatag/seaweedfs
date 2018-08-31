@@ -135,6 +135,9 @@ func (l *DiskLocation) deleteVolumeById(vid VolumeId) (e error) {
 }
 
 func (l *DiskLocation) LoadVolume(vid VolumeId, needleMapKind NeedleMapType) bool {
+	l.Lock()
+	defer l.Unlock()
+	
 	if dirs, err := ioutil.ReadDir(l.Directory); err == nil {
 		for _, dir := range dirs {
 			volId, _, err := l.volumeIdFromPath(dir)
