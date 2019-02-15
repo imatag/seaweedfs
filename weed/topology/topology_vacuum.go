@@ -77,11 +77,7 @@ func batchVacuumVolumeCommit(vl *VolumeLayout, vid storage.VolumeId, locationlis
 			glog.V(0).Infoln("Complete Commiting vacuum", vid, "on", dn.Url())
 		}
 		if isCommitSuccess {
-			// set volume available, without locking
-			vl.vid2location[vid].Set(dn)
-			if vl.vid2location[vid].Length() >= vl.rp.GetCopyCount() {
-				vl.setVolumeWritable(vid)
-			}
+			vl.SetVolumeAvailable(dn, vid)
 		}
 	}
 	return isCommitSuccess
@@ -100,10 +96,11 @@ func batchVacuumVolumeCleanup(vl *VolumeLayout, vid storage.VolumeId, locationli
 func shuffle(vals []storage.VolumeId) {
   r := rand.New(rand.NewSource(time.Now().Unix()))
   for len(vals) > 0 {
-    n := len(vals)
-    randIndex := r.Intn(n)
-    vals[n-1], vals[randIndex] = vals[randIndex], vals[n-1]
-    vals = vals[:n-1]
+	  n := len(vals)
+	  randIndex := r.Intn(n)
+	  glog.V(0).Infof("n=%d swap %d and %d", n, randIndex, n-1)
+	  vals[n-1], vals[randIndex] = vals[randIndex], vals[n-1]
+	  vals = vals[:n-1]
   }
 }
 
@@ -139,9 +136,12 @@ func (t *Topology) Vacuum(garbageThreshold string, preallocate int64) int {
 
 					glog.V(0).Infof("check vacuum on collection:%s volume:%d", c.Name, vid)
 					if batchVacuumVolumeCheck(volumeLayout, vid, locationlist, garbageThreshold) {
+						volumeLayout.accessLock.RUnlock() // unlock during compaction
 						if batchVacuumVolumeCompact(volumeLayout, vid, locationlist, preallocate) {
 							batchVacuumVolumeCommit(volumeLayout, vid, locationlist)
 						}
+						// stop there as we can't guarantee keys are still valid
+						return 0
 					}
 				}
 				volumeLayout.accessLock.RUnlock()
