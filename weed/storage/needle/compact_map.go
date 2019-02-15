@@ -201,8 +201,6 @@ func (cm *CompactMap) Visit(visit func(NeedleValue) error) error {
 // useful after loading a messed up idx file
 // it may temporarily allocate quite a bit though
 func (cm *CompactMap) Optimize() {
-	glog.V(1).Infof("optimize ", len(cm.list), cap(cm.list))
-	
 	// call Visit to read all keys and store them in a temporary array for sorting
 	var delta []NeedleValue
 	cm.Visit(func(needleValue NeedleValue) error {
@@ -223,6 +221,4 @@ func (cm *CompactMap) Optimize() {
 	}
 	
 	runtime.GC()
-	
-	glog.V(1).Infof("repacked", len(cm.list), cap(cm.list))
 }
