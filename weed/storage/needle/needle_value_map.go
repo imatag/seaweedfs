@@ -9,4 +9,5 @@ type NeedleValueMap interface {
 	Delete(key NeedleId) uint32
 	Get(key NeedleId) (*NeedleValue, bool)
 	Visit(visit func(NeedleValue) error) error
+	Optimize()
 }

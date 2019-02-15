@@ -2,7 +2,10 @@ package needle
 
 import (
 	. "github.com/chrislusf/seaweedfs/weed/storage/types"
+	"github.com/chrislusf/seaweedfs/weed/glog"
 	"sync"
+	"sort"
+	"runtime"
 )
 
 type CompactSection struct {
@@ -192,4 +195,34 @@ func (cm *CompactMap) Visit(visit func(NeedleValue) error) error {
 		cs.RUnlock()
 	}
 	return nil
+}
+
+// Optimize packs the data structure to minimize memory usage
+// useful after loading a messed up idx file
+// it may temporarily allocate quite a bit though
+func (cm *CompactMap) Optimize() {
+	glog.V(1).Infof("optimize ", len(cm.list), cap(cm.list))
+	
+	// call Visit to read all keys and store them in a temporary array for sorting
+	var delta []NeedleValue
+	cm.Visit(func(needleValue NeedleValue) error {
+		delta = append(delta, needleValue)
+		return nil
+	})
+	
+	// sort by Key
+	sort.Slice(delta, func(i, j int) bool {
+		return delta[i].Key < delta[j].Key
+	})
+
+	// clear everything and add back
+	cm.list = nil
+
+	for _, needleValue := range delta {
+		cm.Set(needleValue.Key, needleValue.Offset, needleValue.Size)
+	}
+	
+	runtime.GC()
+	
+	glog.V(1).Infof("repacked", len(cm.list), cap(cm.list))
 }

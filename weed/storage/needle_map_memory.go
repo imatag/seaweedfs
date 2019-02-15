@@ -46,6 +46,7 @@ func LoadBtreeNeedleMap(file *os.File) (*NeedleMap, error) {
 }
 
 func doLoading(file *os.File, nm *NeedleMap) (*NeedleMap, error) {
+	
 	e := WalkIndexFile(file, func(key NeedleId, offset Offset, size uint32) error {
 		if key > nm.MaximumFileKey {
 			nm.MaximumFileKey = key
@@ -68,6 +69,7 @@ func doLoading(file *os.File, nm *NeedleMap) (*NeedleMap, error) {
 		return nil
 	})
 	glog.V(1).Infof("max file key: %d for file: %s", nm.MaximumFileKey, file.Name())
+	nm.m.Optimize()
 	return nm, e
 }
 

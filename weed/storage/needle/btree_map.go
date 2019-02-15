@@ -51,3 +51,6 @@ func (cm *BtreeMap) Visit(visit func(NeedleValue) error) (ret error) {
 	})
 	return ret
 }
+
+func (cm *BtreeMap) Optimize() {
+}
