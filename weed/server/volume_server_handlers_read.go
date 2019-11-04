@@ -200,6 +200,17 @@ func conditionallyResizeImages(originalDataReaderSeeker io.ReadSeeker, ext strin
 
 func writeResponseContent(filename, mimeType string, rs io.ReadSeeker, w http.ResponseWriter, r *http.Request) error {
 	totalSize, e := rs.Seek(0, 2)
+
+	// skip option
+	skip := int64(0)
+	if r.FormValue("skip") != "" {
+		skip, _ = strconv.ParseInt(r.FormValue("skip"), 10, 64)
+		if skip > totalSize {
+			skip = totalSize
+		}
+		totalSize -= skip
+	}
+	
 	if mimeType == "" {
 		if ext := path.Ext(filename); ext != "" {
 			mimeType = mime.TypeByExtension(ext)
@@ -225,7 +236,7 @@ func writeResponseContent(filename, mimeType string, rs io.ReadSeeker, w http.Re
 	rangeReq := r.Header.Get("Range")
 	if rangeReq == "" {
 		w.Header().Set("Content-Length", strconv.FormatInt(totalSize, 10))
-		if _, e = rs.Seek(0, 0); e != nil {
+		if _, e = rs.Seek(skip, 0); e != nil {
 			return e
 		}
 		_, e = io.Copy(w, rs)
@@ -265,7 +276,7 @@ func writeResponseContent(filename, mimeType string, rs io.ReadSeeker, w http.Re
 		w.Header().Set("Content-Length", strconv.FormatInt(ra.length, 10))
 		w.Header().Set("Content-Range", ra.contentRange(totalSize))
 		w.WriteHeader(http.StatusPartialContent)
-		if _, e = rs.Seek(ra.start, 0); e != nil {
+		if _, e = rs.Seek(ra.start + skip, 0); e != nil {
 			return e
 		}
 
@@ -292,7 +303,7 @@ func writeResponseContent(filename, mimeType string, rs io.ReadSeeker, w http.Re
 				pw.CloseWithError(e)
 				return
 			}
-			if _, e = rs.Seek(ra.start, 0); e != nil {
+			if _, e = rs.Seek(ra.start + skip, 0); e != nil {
 				pw.CloseWithError(e)
 				return
 			}
