@@ -2,7 +2,6 @@ package needle
 
 import (
 	. "github.com/chrislusf/seaweedfs/weed/storage/types"
-	"github.com/chrislusf/seaweedfs/weed/glog"
 	"sync"
 	"sort"
 	"runtime"
