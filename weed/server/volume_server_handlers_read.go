@@ -208,7 +208,22 @@ func writeResponseContent(filename, mimeType string, rs io.ReadSeeker, w http.Re
 		if skip > totalSize {
 			skip = totalSize
 		}
+		if skip < 0 {
+			skip = 0
+		}
 		totalSize -= skip
+	}
+	// size option
+	size := int64(0)
+	if r.FormValue("size") != "" {
+		size, _ = strconv.ParseInt(r.FormValue("size"), 10, 64)
+		if size > totalSize {
+			size = totalSize
+		}
+		if size < 0 {
+			size = 0
+		}
+		totalSize = size
 	}
 	
 	if mimeType == "" {
@@ -216,6 +231,11 @@ func writeResponseContent(filename, mimeType string, rs io.ReadSeeker, w http.Re
 			mimeType = mime.TypeByExtension(ext)
 		}
 	}
+	// content_type option
+	if r.FormValue("content_type") != "" {
+		mimeType = r.FormValue("content_type")
+	}
+	
 	if mimeType != "" {
 		w.Header().Set("Content-Type", mimeType)
 	}
@@ -239,7 +259,7 @@ func writeResponseContent(filename, mimeType string, rs io.ReadSeeker, w http.Re
 		if _, e = rs.Seek(skip, 0); e != nil {
 			return e
 		}
-		_, e = io.Copy(w, rs)
+		_, e = io.CopyN(w, rs, totalSize)
 		return e
 	}
 
